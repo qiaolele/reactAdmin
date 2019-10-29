@@ -1,8 +1,9 @@
 import React, { Component } from 'react'
 import {Card,Form,Input,Cascader,Upload,Icon,Button,message} from 'antd'
-import {reqCategorys} from '../../api/index'
+import {reqCategorys,reqAddOrUpdateProduct} from '../../api/index'
 import LinkButton from '../../components/link-button';
 import PictureWall from './pictures-wall'
+import RichTextEditor from './rich-text-editor'
 const Item = Form.Item;
 const {TextArea} = Input
 // const options = [
@@ -33,6 +34,7 @@ class ProductAddUpdate extends Component {
     super(props)
     //创建用来保存ref标识的标签对象的容器
     this.pw = React.createRef()
+    this.editor = React.createRef()
   }
 
   //自定义验证函数——校验价格
@@ -47,19 +49,41 @@ class ProductAddUpdate extends Component {
   //提交的事件
   submit=()=>{
     //进行所有的表单验证——通过才发送请求
-    this.props.form.validateFields((error,values)=>{
-      //取子组件上传图片的值
-      values.imgs = this.pw.current.getImgs()
-      // console.log(values.imgs)
-      console.log(values);
+    this.props.form.validateFields(async (error,values)=>{
       if(!error){
-        message.success('发送ajax请求')
+        //取子组件上传图片的值
+        values.imgs = this.pw.current.getImgs()
+        //1、收集数据：——并封装成product对象
+        const {name,desc,price,categoryIds,imgs} = values
+        let pCategoryId,categoryId
+        if(categoryIds.length ===1){
+          pCategoryId = '0'
+          categoryId = categoryIds[0]
+        }else{
+          pCategoryId = categoryIds[0]
+          categoryId = categoryIds[1]
+        }
+        //获取子组件富文本编辑器的内容
+        const detail = this.editor.current.getDetail()
+        const product = {name,desc,price,imgs,detail,pCategoryId,categoryId}
+        //如果是更新，需要添加_id
+        if(this.isUpdate){
+          product._id = this.product._id
+        }
+        console.log(values,detail);
+        //2、调用接口请求函数——去添加/更新
+        const result = await reqAddOrUpdateProduct(product)
+        //3、根据结果提示
+        if(result.status===0){
+            message.success(`${this.isUpdate ? '更新' :'添加'}商品成功！`)
+            this.props.history.goBack();
+        }else{
+          message.error(`${this.isUpdate ? '更新' :'添加'}商品失败！`)
+        }
       }else{
         message.error(error)
       }
-
     })
-    console.log('提交')
   }
   // 获取一级、二级分类列表并显示
   //async函数的返回值是一个新的promise对象，promise的结果和值由async的结果来决定
@@ -142,7 +166,7 @@ class ProductAddUpdate extends Component {
   }
   render() {
     const {isUpdate,product} = this;
-    const {pCategoryId,categoryId,imgs} = product;
+    const {pCategoryId,categoryId,imgs,detail} = product;
     //用来接收级联分类id的数组
     const categoryIds = []
     if(isUpdate){
@@ -223,8 +247,8 @@ class ProductAddUpdate extends Component {
               <Item label="商品图片" >
                 <PictureWall ref={this.pw} imgs={imgs}></PictureWall>
               </Item>
-              <Item label="商品详情" >
-                  <div>商品详情</div>
+              <Item label="商品详情" wrapperCol={{span:20}}>
+                  <RichTextEditor ref={this.editor} detail={detail}></RichTextEditor>
               </Item>
               <Item >
                   <Button type="primary" onClick={this.submit}>提交</Button>

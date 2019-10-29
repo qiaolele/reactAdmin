@@ -24,7 +24,7 @@ const {Footer,Sider,Content} = Layout;
       return <Redirect to='/login' />
     }
      return (
-       <Layout style={{height:'100%'}}>
+       <Layout style={{minHeight:'100%'}}>
           <Sider>
             <LeftNav />
           </Sider>
