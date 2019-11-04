@@ -504,10 +504,10 @@ index.js 入口文件
 
     1). Component存在的问题?
         a. 父组件重新render(), 当前组件也会重新执行render(), 即使没有任何变化
-        b. 当前组件setState(), 重新执行render(), 即使state没有任何变化
+        b. 当前组件setState(),  即使state没有任何变化,也会重新执行render(),
 
     2). 解决Component存在的问题
-        a. 原因: 组件的shouldcomponentUpdate()默认返回true, 即使数据没有变化render()都会重新执行
+        a. 原因: 组件的shouldComponentUpdate()默认返回true, 即使数据没有变化render()都会重新执行
         b. 办法1: 重写shouldComponentUpdate(), 判断如果数据有变化返回true, 否则返回false
         c. 办法2: 使用PureComponent代替Component
         d. 说明: 一般都使用PureComponent来优化组件性能
@@ -516,6 +516,14 @@ index.js 入口文件
         a. 重写实现shouldComponentUpdate()
         b. 对组件的新/旧state和props中的数据进行浅比较, 如果都没有变化, 返回false, 否则返回true
         c. 一旦componentShouldUpdate()返回false不再执行用于更新的render()
+
+    4). 使用PureComponent时候的注意事项：
+        a. 如果改变的只是状态数据对象里面的某一个内部的数据，如果使用对象的形式，他不会重复渲染，必须使用...去解构出一个新对象来，才会重新渲染：
+        例如：// 更新options
+        this.setState({
+          options:[...this.state.options]//会重新渲染
+          options:this.state.options//不会重新渲染
+        })
 
     4). 面试题:
         组件的哪个生命周期勾子能实现组件优化?

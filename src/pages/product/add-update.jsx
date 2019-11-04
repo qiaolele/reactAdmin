@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import {Card,Form,Input,Cascader,Upload,Icon,Button,message} from 'antd'
 import {reqCategorys,reqAddOrUpdateProduct} from '../../api/index'
 import LinkButton from '../../components/link-button';
@@ -25,7 +25,7 @@ const {TextArea} = Input
 //   },
 // ];
 // product的添加、修改路由
-class ProductAddUpdate extends Component {
+class ProductAddUpdate extends PureComponent {
   state = {
     options:[],
   };
@@ -126,7 +126,7 @@ class ProductAddUpdate extends Component {
         targetOption.children = childOptions
     }
      //更新options状态
-    this.setState({options})
+    this.setState({options})//这里的options是新创建的options所以会更新
   }
   //用于加载下一级列表的回调函数,
   loadData = async selectedOptions => {

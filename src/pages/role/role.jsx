@@ -1,9 +1,12 @@
 import React, { Component } from 'react'
 import {Card,Button,Modal,Table, message} from 'antd'
 import { PAGE_SIZE } from '../../utils/constant'
-import {reqRoles,reqAddRole} from '../../api/index'
+import {reqRoles,reqAddRole,reqUpdateRole} from '../../api/index'
 import AddForm from './add-form'
 import AuthForm from './auth-form'
+import memoryUtil from '../../utils/memoryUtil'
+import storageUtil from '../../utils/storageUtil'
+import {formateDate} from '../../utils/dateUtils'
 // 角色管理路由
 export default class Role extends Component {
   state = {
@@ -12,27 +15,34 @@ export default class Role extends Component {
     isShowAdd:false,//是否显示添加弹窗
     isShowAuth:false,//是否显示设置权限弹窗
   }
+  constructor(props){
+    super(props)
+    this.auth = React.createRef();
+  }
   initColumn= () =>{
     this.columns = [
       {
-        titile:'角色名称',
+        title:'角色名称',
         dataIndex:'name',
       },
       {
-        titile:'创建时间',
+        title:'创建时间',
         dataIndex:'create_time',
+        render:(create_time) => formateDate(create_time)
       },
       {
-        titile:'授权时间',
+        title:'授权时间',
         dataIndex:'auth_time',
+        render:formateDate
       },
       {
-        titile:'授权人',
+        title:'授权人',
         dataIndex:'auth_name',
       }
 
     ]
   }
+  //获取角色列表
   getRoles= async ()=>{
     const result = await reqRoles()
     if(result.status ===0){
@@ -89,7 +99,31 @@ export default class Role extends Component {
   }
   //更新角色
   updateRole = async ()=>{
-
+    const role = this.state.role;
+    //得到最新的menus
+    const menus = this.auth.current.getMenus();
+    role.menus = menus;
+    role.auth_time = Date.now();
+    role.auth_name = memoryUtil.user.username;
+    //请求接口更新数据
+    const result = await reqUpdateRole(role);
+    if(result.status === 0){
+      //2、关闭弹窗；
+      this.setState({isShowAuth:false})
+      //如果当前更新的是自己角色的权限，强制退出到登录页面
+      if(role._id === memoryUtil.user.role_id){
+        memoryUtil.user = {}
+        storageUtil.removeUser()
+        this.props.history.replace('/login');
+        message.success('当前用户角色权限已修改，请重新登录')
+      }else{
+        message.success('设置角色权限成功')
+        //获取角色列表
+        this.getRoles();
+      }
+    }else{
+      message.error('设置角色权限失败')
+    }
   }
   handleCancel=()=>{
     this.setState({
@@ -119,7 +153,15 @@ export default class Role extends Component {
             columns = {this.columns}
             rowKey='_id'
             pagination={{defaultPageSize:PAGE_SIZE}}
-            rowSelection={{type:'radio',selectedRowKeys:[role._id]}}//单选按钮配置
+            rowSelection={{
+              type:'radio',
+              selectedRowKeys:[role._id],
+              onSelect: (role) => { // 选择某个radio时回调
+                this.setState({
+                  role
+                })
+              }
+            }}//单选按钮配置
             onRow ={this.onRow}
           ></Table>
           <Modal
@@ -138,7 +180,7 @@ export default class Role extends Component {
             onOk={this.updateRole}
             onCancel={this.handleCancel}
           >
-          <AuthForm role={role}></AuthForm>
+          <AuthForm role={role} ref={this.auth}></AuthForm>
           </Modal>
       </Card>
     )

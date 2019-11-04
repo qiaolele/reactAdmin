@@ -4,6 +4,7 @@ import {Menu,Icon} from 'antd';
 import logo from '../../assets/images/logo.png'
 import './index.less'
 import menuList from '../../config/menuConfig';
+import memoryUtil from '../../utils/memoryUtil';
 
 const SubMenu = Menu.SubMenu;//菜单和菜单项
 
@@ -33,6 +34,21 @@ class LeftNav extends Component {
       });
     }
   }
+  //判断当前登录用户对item是否有权限
+  hasAuth=(item)=>{
+    const {key, isPublic} = item
+    const menus = memoryUtil.user.role.menus//当前用户的菜单数组
+    const username = memoryUtil.user.username;
+    // 1、如果当前用户是admin——不需要判断，直接返回true
+    // 2、当前用户有此item的权限：key有没有在menus中
+    // 3、如果当前用户有此item的权限，key有没有menus中
+    if(username === 'admin' || isPublic || menus.indexOf(key)!==-1){
+      return true;
+    }else if(item.children){//4、如果当前用户有此item的某个子item的权限——也显示
+      return !!item.children.find(child => menus.indexOf(child.key) !== -1)//强制类型转换成布尔值//证明他的子路由出现了，返回ture，否则返回false
+    }
+    return false;
+  }
   //根据menu的数据数组生成对应的标签数组
   //使用map()+递归调用
   getMenuNodes = (menuList)=>{
@@ -47,41 +63,45 @@ class LeftNav extends Component {
               children:[]//有时候有有时候没有
             }
         */
-       if(!item.children){
-          return (
-            <Menu.Item key={item.key}>
-              <Link to={item.key}>
-                <Icon type={item.icon} />
-                <span>{item.title}</span>
-              </Link>
-            </Menu.Item>
-          )
-       }else{
-        // const cItem = item.children.find(cItem=> cItem.key === path) 
-        const cItem = item.children.find(cItem=> path.indexOf(cItem.key) === 0)//优化上面的，可以让子路由匹配到当前路由下面，刷新后依然高亮
-        if(cItem){
-          //如果存在，说明当前item的子列表需要展开
-          this.setState({
-            openKeys: [item.key],
-          });
-          // this.openKey = item.key
+       //如果当前用户有item对应的权限——才需要显示添加对应的菜单项
+        if(this.hasAuth(item)){
+          if(!item.children){
+              return (
+                <Menu.Item key={item.key}>
+                  <Link to={item.key}>
+                    <Icon type={item.icon} />
+                    <span>{item.title}</span>
+                  </Link>
+                </Menu.Item>
+              )
+          }else{
+            // const cItem = item.children.find(cItem=> cItem.key === path) 
+            const cItem = item.children.find(cItem=> path.indexOf(cItem.key) === 0)//优化上面的，可以让子路由匹配到当前路由下面，刷新后依然高亮
+            if(cItem){
+              //如果存在，说明当前item的子列表需要展开
+              this.setState({
+                openKeys: [item.key],
+              });
+              // this.openKey = item.key
+            }
+            return(
+              <SubMenu
+                  key={item.key}
+                  title={
+                    <span>
+                      <Icon type={item.icon} />
+                      <span>{item.title}</span>
+                    </span>
+                  }
+                >
+                {this.getMenuNodes(item.children)}
+                </SubMenu>
+            )
+          }
         }
-         return(
-           <SubMenu
-              key={item.key}
-              title={
-                <span>
-                  <Icon type={item.icon} />
-                  <span>{item.title}</span>
-                </span>
-              }
-            >
-            {this.getMenuNodes(item.children)}
-            </SubMenu>
-         )
-       }
       })
   }
+  
 //在第一次render()之前执行一次，为第一次render()准备数据(同步)
   componentWillMount(){
     this.menuNodes = this.getMenuNodes(menuList);

@@ -93,7 +93,7 @@
                   getFieldDecorator('username',{//配置对象：属性名是特定的一些名称
                   //声明式验证：直接使用别人定义好的验证规则进行验证
                     rules: [
-                      { required: true,whitespace:true, message: '用户名必须输入' },
+                      { required: true, whitespace:true, message: '用户名必须输入' },
                       { min: 4, message: '用户名至少是4位' },
                       { max: 12, message: '用户名最多是12位' },
                       { pattern: /^[a-zA-Z0-9_]+$/, message: '用户名必须以数字、字母、下划线开头' }
@@ -104,7 +104,6 @@
                     <Input
                       prefix={<Icon type="user" style={{ color: 'rgba(0,0,0,.25)' }} />}
                       placeholder="用户名"
-                      disabled={true}
                     />
                   )
                 }
